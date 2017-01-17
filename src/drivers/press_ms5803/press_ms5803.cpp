@@ -76,9 +76,7 @@
 #include <drivers/drv_hrt.h>
 #include <drivers/device/ringbuffer.h>
 
-double T2;
-double OFF2;
-double SENS2;
+
 
 /**
  * Pressure sensor driver start / stop handling function
@@ -176,7 +174,10 @@ private:
 	orb_id_t					_press_orb_id;	///< uORB pressure topic ID
 	double						_pressure_value;	///< pressure in bar (-1 means unknown)
 	double						_temperature_value;	///< temperature in C
-	uint32_t 					C[8];                  //coefficient storage
+    uint32_t 					C[8];                  //coefficient storage
+
+
+
 };
 
 namespace
@@ -190,7 +191,9 @@ PRESS_MS5803::PRESS_MS5803(int bus, uint16_t press_ms5803_addr) :
 	_press_topic(nullptr),
 	_press_orb_id(nullptr),
 	_pressure_value(0.0f),
-	_temperature_value(0.0f)
+    _temperature_value(0.0f)
+
+
 
 {
 	memset(&_work, 0, sizeof(_work));
@@ -204,7 +207,6 @@ PRESS_MS5803::~PRESS_MS5803()
 int
 PRESS_MS5803::init()
 {
-
 	// init orb id
 	_press_orb_id = ORB_ID(pressure);
 
@@ -221,7 +223,7 @@ PRESS_MS5803::init()
 			start();
 	}
 
-	return ret;
+    return ret;
 }
 
 void
@@ -256,7 +258,7 @@ PRESS_MS5803::loadCoefs() //Read from sensor on start
 			
 			C[i] = read_prom(i);
 	}
-   /* warnx("C3 %f", C[3]);*/
+   /* warnx("C3 %f", C[3]); */
 }
 
 void
@@ -279,11 +281,9 @@ PRESS_MS5803::cycle()
 	_press_topic = orb_advertise(_press_orb_id, &newreport);
 
 
-   /*  warnx("Pressure %f", _pressure_value);
-    warnx("Temperature %f", _temperature_value); */
-
-
-   /* warnx("C3 %f", C[3]); */
+     warnx("Pressure %f", _pressure_value);
+    warnx("Temperature %f", _temperature_value);
+    /* warnx("C3 %f", C[3]); */
 
 	orb_publish(_press_orb_id, _press_topic, &newreport);
 
@@ -301,8 +301,8 @@ PRESS_MS5803::calcPT()
 {
 	// read data from sensor
     uint32_t D1 = cmd_adc(CMD_ADC_D1 + CMD_ADC_256);
-	uint32_t D2 = cmd_adc(CMD_ADC_D2 + CMD_ADC_256);
-    /* warnx("D1 %f", D1);
+    uint32_t D2 = cmd_adc(CMD_ADC_D2 + CMD_ADC_256);
+   /*  warnx("D1 %f", D1);
       warnx("D2 %f", D2); */
 
 
