@@ -31,12 +31,14 @@
 #
 ############################################################################
 px4_add_module(
-	MODULE modules__raw_pressure
-	MAIN raw_pressure
-	STACK_MAIN 2000
+	MODULE modules__circle
+	MAIN circle
+	COMPILE_FLAGS -Os
+	STACK_MAIN 1200
 	SRCS
-		raw_pressure.c
+		circle_main.cpp
+		circle_params.c
 	DEPENDS
 		platforms__common
 	)
-# vim: set noet ft=cmake fenc=utf-8 ff=unix : 
+# vim: set noet ft=cmake fenc=utf-8 ff=unix :
