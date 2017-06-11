@@ -99,6 +99,7 @@ private:
      bool       _task_should_exit;      /**< if true, task_main() should exit */
      int        _control_task;          /**< task handle */
      float      _thrust_sp;             /**< thrust setpoint */
+     int        _ctrl_state_sub;        /**< control state subscription */
      int        _v_att_sub;             /**< vehicle attitude subscription */
      int        _params_sub;            /**< parameter updates subscription */
      int counter;
@@ -192,26 +193,20 @@ private:
 
      }		_params;
 
-
      int   parameters_update();
      void   parameter_update_poll();
 
-
-
-
      static void task_main_trampoline(int argc, char *argv[]);
 
-     void control_attitude();
+     void control_state_poll();
 
+     void control_attitude();
 
      /**
       * Check for control state updates.
       */
 
      void task_main();
-
-
-
 
 };
 
@@ -229,6 +224,7 @@ CircleControl::CircleControl() :
     _control_task(-1),
 
     //subscriptions
+    _ctrl_state_sub(-1),
     _v_att_sub(-1),
     _params_sub(-1),
 
@@ -397,13 +393,24 @@ void CircleControl::task_main_trampoline(int argc, char *argv[])
     circle::g_control->task_main();
 }
 
+void CircleControl::control_state_poll()
+{
+    /* check if there is a new message */
+    bool updated;
+    orb_check(_ctrl_state_sub, &updated);
 
+    if (updated) {
+        orb_copy(ORB_ID(control_state), _ctrl_state_sub, &_ctrl_state);
+    }
+}
 
 void CircleControl::control_attitude()
 {
 
+            control_state_poll();
+
     /* geometric control start */
-             time_R_sp = hrt_absolute_time() / 1000000.0f;  //get current time
+             time_R_sp =  hrt_absolute_time() / 1000000.0f;  //get current time
 
              math::Vector<3> _r_des;
              _r_des(0) = _params.circle_amp * cosf(2.0f * PI * time_R_sp / _params.period_R_sp);
@@ -421,11 +428,11 @@ void CircleControl::control_attitude()
              _R_sp(2, 2) = 1.0f;
 
              // get rotation derivative setpoint of CIRCLE!
-             _Rdot_sp(0, 0) = (-1.0f)*_params.circle_amp * sinf(2.0f * PI * time_R_sp / _params.period_R_sp) * (2.0f  * PI * time_R_sp / _params.period_R_sp);
-             _Rdot_sp(1, 0) = _params.circle_amp * cosf(2.0f * PI * time_R_sp / _params.period_R_sp)* (2.0f  * PI * time_R_sp / _params.period_R_sp);
+             _Rdot_sp(0, 0) = (-1.0f)*_params.circle_amp * sinf(2.0f * PI * time_R_sp / _params.period_R_sp) * (2.0f  * PI  / _params.period_R_sp);
+             _Rdot_sp(1, 0) = _params.circle_amp * cosf(2.0f * PI * time_R_sp / _params.period_R_sp)* (2.0f  * PI  / _params.period_R_sp);
              _Rdot_sp(2, 0) = 0.0f;
-             _Rdot_sp(0, 1) = (-1.0f)*_params.circle_amp * cosf(2.0f * PI * time_R_sp / _params.period_R_sp)* (2.0f  * PI * time_R_sp / _params.period_R_sp);
-             _Rdot_sp(1, 1) = (-1.0f)*_params.circle_amp * sinf(2.0f * PI * time_R_sp / _params.period_R_sp)* (2.0f  * PI * time_R_sp / _params.period_R_sp);
+             _Rdot_sp(0, 1) = (-1.0f)*_params.circle_amp * cosf(2.0f * PI * time_R_sp / _params.period_R_sp)* (2.0f  * PI / _params.period_R_sp);
+             _Rdot_sp(1, 1) = (-1.0f)*_params.circle_amp * sinf(2.0f * PI * time_R_sp / _params.period_R_sp)* (2.0f  * PI / _params.period_R_sp);
              _Rdot_sp(0, 2) = 0.0f;
              _Rdot_sp(1, 2) = 0.0f;
              _Rdot_sp(2, 2) = 1.0f;
@@ -467,29 +474,6 @@ void CircleControl::control_attitude()
 
             math::Vector<3> e_omega = omega - omega_sp;
 
-          //Output attitude error
-     /*       PX4_INFO("e_R:\t%8.4f\t%8.4f\t%8.4f",
-                                 (double)e_R(2, 1),
-                                 (double)e_R(0, 2),
-                                 (double)e_R(1, 0));
-    */
-
-
-/*
-            math::Vector <3> omega;
-            omega(0) = _v_att.rollspeed;
-            omega(1) = _v_att.pitchspeed;
-            omega(2) = _v_att.yawspeed;
-            math::Vector <3> omega2;
-            omega2(0) = _I(0, 0) * omega(0);
-            omega2(1) = _I(1, 1) * omega(1);
-            omega2(2) = _I(2, 2) * omega(2);
-            math::Vector<3> cross;
-            cross(0) = omega(1) * omega2(2) - omega(2) * omega2(1);
-            cross(1) = omega(2) * omega2(0) - omega(0) * omega2(2);
-            cross(2) = omega(0) * omega2(1) - omega(1) * omega2(0);
-*/
-            //torques = - _att_p_gain * e_R_vec  + cross;
 
                     /* Matrix Controller Parameters Stabilization */
                     _att_p_gain(0, 0) = _params.att_p_gain_xx;       /**< _att_p_gain_xx */
@@ -552,8 +536,41 @@ void CircleControl::control_attitude()
         /* geometric control end */
 
     if (hrt_absolute_time() - time_saved  > 500000){
-      //  PX4_INFO("Absolute time:\t%8.4f",
-      //           (double)hrt_absolute_time());
+
+      // PX4_INFO("omega_sp:\t%8.4f\t%8.4f\t%8.4f",
+      //                      (double)_Rdot_sp(0, 0),
+      //                      (double)_R_sp(0, 0),
+      //                      (double)_Rdot_sp(1, 1));
+
+      // PX4_INFO("omega_sp:\t%8.4f\t%8.4f\t%8.4f",
+      //                      (double)omega_sp(0),
+      //                      (double)omega_sp(1),
+      //                      (double)omega_sp(2));
+      //
+      // PX4_INFO("omega:\t%8.4f\t%8.4f\t%8.4f",
+      //                      (double)omega(0),
+      //                      (double)omega(1),
+      //                      (double)omega(2));
+
+      // PX4_INFO("e_omega:\t%8.4f\t%8.4f\t%8.4f",
+      //                     (double)e_omega(0),
+      //                     (double)e_omega(1),
+      //                     (double)e_omega(2));
+      // //Output attitude error
+      //   PX4_INFO("e_R:\t%8.4f\t%8.4f\t%8.4f",
+      //                        (double)e_R_vec(0),
+      //                        (double)e_R_vec(1),
+      //                        (double)e_R_vec(2));
+
+        // PX4_INFO("R:\t%8.4f\t%8.4f\t%8.4f",
+        //                     (double)R(0,0),
+        //                     (double)R(1,1),
+        //                     (double)R(2,2));
+
+        // PX4_INFO("R_sp:\t%8.4f\t%8.4f\t%8.4f",
+        //                    (double)_R_sp(0,0),
+        //                    (double)_R_sp(1,1),
+        //                    (double)_R_sp(2,2));
 
         PX4_INFO("thrust:\t%8.4f",
                  (double)thrust);
@@ -566,9 +583,9 @@ void CircleControl::control_attitude()
         time_saved = hrt_absolute_time();
     }
 
-       _att_control(0) = torques(2);    //roll
+       _att_control(0) = torques(0);    //roll
        _att_control(1) = torques(1);    //pitch
-       _att_control(2) = torques(0);    //yaw
+       _att_control(2) = torques(2);    //yaw
 
        _thrust_sp = thrust;
 
@@ -581,6 +598,8 @@ void CircleControl::task_main()
     _v_att_sub = orb_subscribe(ORB_ID(vehicle_attitude));
 
     _params_sub = orb_subscribe(ORB_ID(parameter_update));
+
+    _ctrl_state_sub = orb_subscribe(ORB_ID(control_state));
 
 
     /* initialize parameters cache */
@@ -635,7 +654,7 @@ void CircleControl::task_main()
             _actuators.timestamp = hrt_absolute_time();
             _actuators.timestamp_sample = _v_att.timestamp;
 
-            orb_publish(ORB_ID(actuator_controls_0), _actuators_0_pub, &_actuators);
+        //    orb_publish(ORB_ID(actuator_controls_0), _actuators_0_pub, &_actuators);
 
             perf_end(_controller_latency_perf);
        }
@@ -647,8 +666,6 @@ void CircleControl::task_main()
     return;
 
 }
-
-
 
 int circle_main(int argc, char *argv[])
 {
