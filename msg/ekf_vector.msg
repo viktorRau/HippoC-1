@@ -1,0 +1,6 @@
+float32 EKF_pos_x
+float32 EKF_pos_y
+float32 EKF_covar_00
+float32 EKF_covar_01
+float32 EKF_covar_10
+float32 EKF_covar_11

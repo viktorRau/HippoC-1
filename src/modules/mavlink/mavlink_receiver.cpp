@@ -41,6 +41,7 @@
  */
 
 /* XXX trim includes */
+#include <uORB/topics/ekf_vector.h>   /* my EKF topic */
 #include <px4_config.h>
 #include <px4_time.h>
 #include <px4_tasks.h>
@@ -90,6 +91,10 @@
 #include "mavlink_main.h"
 
 static const float mg2ms2 = CONSTANTS_ONE_G / 1000.0f;
+
+/* This part is needed for publishing the EKF_data*/
+orb_advert_t            _EKF_topic; //uorb ekf topic
+struct ekf_vector_s ekf_vector;
 
 MavlinkReceiver::MavlinkReceiver(Mavlink *parent) :
 	_mavlink(parent),
