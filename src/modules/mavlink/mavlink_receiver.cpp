@@ -933,6 +933,7 @@ MavlinkReceiver::handle_message_set_position_target_local_ned(mavlink_message_t 
 					}
 
 					/* set the local pos values */
+                                        if(!offboard_control_mode.ignore_position) {
                                         pos_sp_triplet.current.position_valid = false;
                                                     //pos_sp_triplet.current.velocity_valid = false; //test
                                                     pos_sp_triplet.current.x = set_position_target_local_ned.x;
@@ -995,8 +996,8 @@ MavlinkReceiver::handle_message_set_position_target_local_ned(mavlink_message_t 
 						pos_sp_triplet.current.vy = set_position_target_local_ned.vy;
 						pos_sp_triplet.current.vz = set_position_target_local_ned.vz;
 
-                                                pos_sp_triplet.current.velocity_frame =
-                                                        set_position_target_local_ned.coordinate_frame;
+                                                /*pos_sp_triplet.current.velocity_frame =
+                                                        set_position_target_local_ned.coordinate_frame;*/
 
 					} else {
                                                 pos_sp_triplet.current.velocity_valid = false;
