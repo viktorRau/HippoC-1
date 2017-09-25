@@ -928,15 +928,60 @@ MavlinkReceiver::handle_message_set_position_target_local_ned(mavlink_message_t 
 					}
 
 					/* set the local pos values */
-					if (!offboard_control_mode.ignore_position) {
-						pos_sp_triplet.current.position_valid = true;
-						pos_sp_triplet.current.x = set_position_target_local_ned.x;
-						pos_sp_triplet.current.y = set_position_target_local_ned.y;
-						pos_sp_triplet.current.z = set_position_target_local_ned.z;
+                                        pos_sp_triplet.current.position_valid = false;
+                                                    //pos_sp_triplet.current.velocity_valid = false; //test
+                                                    pos_sp_triplet.current.x = set_position_target_local_ned.x;
+                                                    pos_sp_triplet.current.y = set_position_target_local_ned.y;
+                                                    pos_sp_triplet.current.z = set_position_target_local_ned.z;
+                                                    pos_sp_triplet.current.vx = set_position_target_local_ned.vx; //test
+                                                    pos_sp_triplet.current.vy = set_position_target_local_ned.vy; //test
+                                                    pos_sp_triplet.current.vz = set_position_target_local_ned.vz; //test
 
-					} else {
-						pos_sp_triplet.current.position_valid = false;
-					}
+
+                                        /*Set the absoilut ekf position values and the ekf covariance values */
+                                                    ekf_vector.EKF_pos_x = pos_sp_triplet.current.x;
+                                                    ekf_vector.EKF_pos_y = pos_sp_triplet.current.y;
+                                                    ekf_vector.EKF_covar_00 = pos_sp_triplet.current.z;
+                                                    ekf_vector.EKF_covar_01 = pos_sp_triplet.current.vx;
+                                                    ekf_vector.EKF_covar_10 = pos_sp_triplet.current.vy;
+                                                    ekf_vector.EKF_covar_11 = pos_sp_triplet.current.vz;
+
+                                                    /*
+                                                    double EKF_pos_x;
+                                            double EKF_pos_y;
+                                            double EKF_covar_00;
+                                            double EKF_covar_01;
+                                            double EKF_covar_10;
+                                            double EKF_covar_11;
+                                                                */
+
+                                            /* Publilshing of the absolut position and the EKF_covariance */
+                                                        if (_EKF_topic != nullptr){
+                                                            orb_publish(ORB_ID(ekf_vector), _EKF_topic, &ekf_vector);
+                                                           } else{
+                                                            _EKF_topic = orb_advertise (ORB_ID(ekf_vector), &ekf_vector);
+
+                                                            }
+
+                             /*
+
+                            PX4_INFO("EKF_Position:\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f",
+                                           (double)set_position_target_local_ned.x,
+                                           (double)set_position_target_local_ned.y,
+                                           (double)set_position_target_local_ned.z,
+                                           (double)set_position_target_local_ned.vx,
+                                           (double)set_position_target_local_ned.vy,
+                                           (double)set_position_target_local_ned.vz);
+                               */
+                            /*
+
+                              PX4_INFO("%.f times received", (double) n);
+                               n=n+1;
+                               */
+                                            } else {
+                                                    pos_sp_triplet.current.position_valid = false;
+                                                    //printf("No offboard Possition \n");
+                                            }
 
 					/* set the local vel values */
 					if (!offboard_control_mode.ignore_velocity) {
@@ -945,11 +990,11 @@ MavlinkReceiver::handle_message_set_position_target_local_ned(mavlink_message_t 
 						pos_sp_triplet.current.vy = set_position_target_local_ned.vy;
 						pos_sp_triplet.current.vz = set_position_target_local_ned.vz;
 
-						pos_sp_triplet.current.velocity_frame =
+                                                /*pos_sp_triplet.current.velocity_frame =
 							set_position_target_local_ned.coordinate_frame;
 
 					} else {
-						pos_sp_triplet.current.velocity_valid = false;
+                                                pos_sp_triplet.current.velocity_valid = false;*/
 					}
 
 					if (!offboard_control_mode.ignore_alt_hold) {
