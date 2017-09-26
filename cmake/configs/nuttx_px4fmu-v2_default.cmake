@@ -111,6 +111,11 @@ set(config_module_list
 	modules/ekf2
 
 	#
+	# Localization App
+	#
+	modules/ekf_position
+
+	#
 	# Vehicle Control
 	#
 	modules/fw_att_control

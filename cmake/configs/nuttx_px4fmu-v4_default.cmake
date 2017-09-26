@@ -124,10 +124,7 @@ set(config_module_list
 	modules/mc_pos_control
 	modules/vtol_att_control
 
-	#
-	# Localization App
-	#
-	modules/ekf_position
+
 
 	#
 	# Logging
