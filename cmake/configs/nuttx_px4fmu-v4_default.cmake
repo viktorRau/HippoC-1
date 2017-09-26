@@ -125,6 +125,11 @@ set(config_module_list
 	modules/vtol_att_control
 
 	#
+	# Localization App
+	#
+	modules/ekf_position
+
+	#
 	# Logging
 	#
 	modules/sdlog2
