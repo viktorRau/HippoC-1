@@ -75,7 +75,7 @@
 #include <uORB/topics/adc_report.h> // includes ADC readings
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/att_pos_mocap.h>
-
+#include <uORB/topics/ekf_vector.h>
 /**
  * Water depth control app start / stop handling function
  *
@@ -112,6 +112,7 @@ private:
     float      _p_zero;
     int        counter;
 
+
     float pitch_fac;
     
     float water_depth;                  /**< actual water depth in m */
@@ -133,6 +134,8 @@ private:
     float water_depth_smo;  /**< Outcome water depth SMO in m */
 
     int _adc_sub_fd;         /**< raw sensor data subscription */
+
+
 
 
     orb_advert_t	_actuators_0_pub;		/**< attitude actuator controls publication */
@@ -240,7 +243,6 @@ private:
 
 
 
-
      static void task_main_trampoline(int argc, char *argv[]);
 
      void control_attitude();
@@ -290,6 +292,7 @@ WaterDepthControl::WaterDepthControl() :
     _v_att_sub(-1),
     _params_sub(-1),
     _adc_sub_fd(-1),
+
 
     // publications
 
@@ -445,6 +448,7 @@ int WaterDepthControl::parameters_update()
 
     return OK;
 }
+
 
 void WaterDepthControl::parameter_update_poll()
 {
@@ -675,7 +679,23 @@ void WaterDepthControl::control_attitude()
             /* get current rotation matrix from control state quaternions */
             math::Quaternion q_att(_ctrl_state.q[0], _ctrl_state.q[1], _ctrl_state.q[2], _ctrl_state.q[3]);
             math::Matrix<3, 3> R = q_att.to_dcm();
-    
+  /*
+           PX4_INFO("XX, YX, ZX:\t%8.4f\t%8.4f\t%8.4f",
+                   (double)R(0,0),
+                   (double)R(1,0),
+                   (double)R(2,0));
+
+           PX4_INFO("XY, YY, ZY:\t%8.4f\t%8.4f\t%8.4f",
+                   (double)R(0,1),
+                   (double)R(1,1),
+                   (double)R(2,1));
+
+           PX4_INFO("XZ, YZ, ZZ:\t%8.4f\t%8.4f\t%8.4f\n",
+                   (double)R(0,2),
+                   (double)R(1,2),
+                   (double)R(2,2));
+                 usleep(1000000);
+ */
             /* get current rates from sensors */
             omega(0) = _v_att.rollspeed;
             omega(1) = _v_att.pitchspeed;
@@ -703,10 +723,12 @@ void WaterDepthControl::control_attitude()
     
     /* Values for engine */
     
-            //_att_control(0) = torques(0);     /**< Roll   */
-            _att_control(1) = torques(1);       /**< Pitch  */
-            _att_control(2) = torques(2);       /**< Yaw    */
-            _thrust_sp = control_depth;         /**< Thrust */
+           _att_control(0) = torques(0);     /**< Roll   */
+         //   _att_control(1) = torques(1);       /**< Pitch  */
+        //  _att_control(2) = torques(2);       /**< Yaw    */
+          //  _thrust_sp = control_depth;         /**< Thrust */
+       //     _thrust_sp = 0;         /**< Thrust */
+
 
 }
 
@@ -714,6 +736,8 @@ void WaterDepthControl::control_attitude()
 //main task
 void WaterDepthControl::task_main()
 {
+
+
     //do subscriptions
     _v_att_sub = orb_subscribe(ORB_ID(vehicle_attitude));
     _pressure_raw = orb_subscribe(ORB_ID(pressure));
@@ -789,10 +813,12 @@ void WaterDepthControl::task_main()
             
             /* Show Parameters of Geometric Control by using a Mavlink Topic and QGC */
             _pos.x = water_depth;
-            _pos.y = _params.water_depth_sp;
+            //_pos.y = _params.water_depth_sp;
+            _pos.y = e_R_vec(0);// Roll
             _pos.z = e_R_vec(1);    // Pitch
             _pos.vx = e_R_vec(2);   // Yaw
-            _pos.vy = torques(1);   // Pitch
+            _pos.vy = torques(0);   // Pitch
+           // _pos.vy = torques(1);   // Pitch
             _pos.vz = torques(2);   // Yaw
             
             
@@ -804,7 +830,7 @@ void WaterDepthControl::task_main()
             _actuators.timestamp = hrt_absolute_time();
             _actuators.timestamp_sample = _v_att.timestamp;
             
-           // orb_publish(ORB_ID(actuator_controls_0), _actuators_0_pub, &_actuators);
+            orb_publish(ORB_ID(actuator_controls_0), _actuators_0_pub, &_actuators);
             orb_publish(ORB_ID(vehicle_local_position), _position_pub, &_pos);
            
 

@@ -934,7 +934,7 @@ MavlinkReceiver::handle_message_set_position_target_local_ned(mavlink_message_t 
 
 					/* set the local pos values */
                                         if(!offboard_control_mode.ignore_position) {
-                                        pos_sp_triplet.current.position_valid = false;
+                                        pos_sp_triplet.current.position_valid = true;
                                                     //pos_sp_triplet.current.velocity_valid = false; //test
                                                     pos_sp_triplet.current.x = set_position_target_local_ned.x;
                                                     pos_sp_triplet.current.y = set_position_target_local_ned.y;
@@ -969,16 +969,18 @@ MavlinkReceiver::handle_message_set_position_target_local_ned(mavlink_message_t 
 
                                                             }
 
-                             /*
 
-                            PX4_INFO("EKF_Position:\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f",
+
+                            /*PX4_INFO("EKF_Position:\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f",
                                            (double)set_position_target_local_ned.x,
                                            (double)set_position_target_local_ned.y,
                                            (double)set_position_target_local_ned.z,
                                            (double)set_position_target_local_ned.vx,
                                            (double)set_position_target_local_ned.vy,
                                            (double)set_position_target_local_ned.vz);
-                               */
+                                           */
+                            PX4_INFO("MAVLINK_RECIEVER\n");
+
                             /*
 
                               PX4_INFO("%.f times received", (double) n);

@@ -108,12 +108,12 @@ set(config_module_list
         modules/attitude_estimator_q
 	#modules/position_estimator_inav
 	#modules/local_position_estimator
-	modules/ekf2
+        modules/ekf2
 
 	#
         # Localization and Control App
 	#
-	modules/ekf_position
+        modules/ekf_position
         modules/water_depth_control_2
 
 	#
